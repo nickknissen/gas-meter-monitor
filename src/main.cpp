@@ -1,36 +1,30 @@
 #include <Arduino.h>
-
 #include <ESP8266WiFi.h>
+#include "config.h"
 
-int reedPin = D2;
-int reedState = 0;
-int reedLast = -1;
+int reedPin = CONFIG_REED_PIN;
 
-unsigned int gasPulses = 0;
-unsigned int gasThis = 0;
-unsigned int gasPrev = 0;
-unsigned int gasLast = 0;
-
-const char* ssid = "DEMO AP";
-const char* password = "DEMO_PASS";
-
-String strFull = "";
-
+unsigned int pulseCount = 0;
+unsigned int priorPulseCount = 0;
+const char* ssid = CONFIG_WIFI_SSID;
+const char* password = CONFIG_WIFI_PASS;
 
 void flashLed (int i) {
-  digitalWrite(BUILTIN_LED, 1);
+  digitalWrite(LED_BUILTIN, 1);
   delay(i);
-  digitalWrite(BUILTIN_LED, 0);
+  digitalWrite(LED_BUILTIN, 0);
 }
 
+
+void onPulse() {
+    pulseCount++;
+}
 
 void setup() {
     // put your setup code here, to run once:
     Serial.begin(115200);
     delay(100);
-    Serial.println("Preparing the gas Monitor project...");
 
-    
     Serial.println();
     Serial.print("Connecting to ");
     Serial.println(ssid);
@@ -46,29 +40,12 @@ void setup() {
     Serial.println("WiFi connected");  
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());     
-
-    pinMode(BUILTIN_LED, OUTPUT);
-
-    pinMode(reedPin, INPUT);
+    pinMode(reedPin, INPUT_PULLUP);
+    attachInterrupt(reedPin, onPulse, CHANGE);
 }
 void loop() {
-
-    reedState = digitalRead(reedPin);
-
-    if (reedState != reedLast && reedLast != -1) {
-        if (reedState == 1 && reedLast != -1) {
-            gasPulses = gasPulses + 1;
-            flashLed(200);
-            Serial.println("pulse");
-
-        } 
+    if (pulseCount != priorPulseCount) {
+        Serial.println(pulseCount);
+        priorPulseCount = pulseCount;
     }
-    reedLast = reedState;
-
-    strFull = gasPulses;
-    strFull += "\t";
-    strFull += gasPrev;
-    strFull += "\t";
-    Serial.println(strFull);
-    gasPrev = gasPulses;
 }
